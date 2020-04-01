@@ -1,0 +1,19 @@
+.posts-container {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 -15px;
+
+  .card {
+    width: 25%;
+    padding: 0 15px;
+    margin-bottom: 30px;
+
+    .title {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+      height: 37px;
+    }
+  }
+}

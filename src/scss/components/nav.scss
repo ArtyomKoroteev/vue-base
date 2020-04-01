@@ -1,0 +1,23 @@
+
+
+.nav {
+  display: flex;
+  align-items: center;
+
+  &-list {
+    display: flex;
+    list-style-type: none;
+
+    > li {
+      padding: 0 8px;
+
+      &:first-child {
+        padding-left: 0;
+      }
+
+      &:last-child {
+        padding-right: 0;
+      }
+    }
+  }
+}
