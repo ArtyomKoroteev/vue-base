@@ -1,5 +1,9 @@
 .vue-app-wrapper {
-  display: flex;
   width: 100%;
   padding: 48px;
+
+  .filter-container {
+    display: flex;
+    margin-bottom: 30px;
+  }
 }
