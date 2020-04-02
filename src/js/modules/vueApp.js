@@ -2,15 +2,14 @@ import data from './data';
 
 const vueApp = () => {
   if (Vue) {
-    // eslint-disable-next-line no-use-before-define
     new Vue({
       el: '#app',
       template: `<div class="vue-app-wrapper">
         <div class="filter-container">
           <select name="author-filter" 
             id="filter" 
-            v-model="selectedValue"
-            @change="sortPosts(selectedValue)">
+            v-model="filterData.userId"
+            @change="sortPosts(filterData.userId)">
               <option selected value="">All posts</option>
               <option v-for="author in authors">{{author}}</option>
           </select>
@@ -31,6 +30,9 @@ const vueApp = () => {
           status: 'published',
           sortedPosts: [],
           selectedValue: '',
+          filterData: {
+            userId: '',
+          },
         };
       },
       methods: {
@@ -42,6 +44,9 @@ const vueApp = () => {
               this.sortedPosts.push(value);
             }
           });
+        },
+        setQueryParams() {
+          window.history.pushState(null, null, `${this.getQueryParams}`);
         },
       },
       computed: {
@@ -61,6 +66,28 @@ const vueApp = () => {
             ? this.sortedPosts
             : this.posts;
         },
+        getQueryParams() {
+          const query = [];
+          let options = '';
+
+          // eslint-disable-next-line no-restricted-syntax
+          for (const key in this.filterData) {
+            if (Object.prototype.hasOwnProperty.call(this.filterData, key)) {
+              if (this.filterData[key].length !== 0) {
+                query.push(`${key}=${this.filterData[key]}`);
+              }
+              options = `?${query.join('&')}`;
+            }
+          }
+          return options;
+        },
+      },
+      created() {
+        this.filterData.userId = Number(window.location.search.split('=')[1]);
+        this.sortPosts(this.filterData.userId);
+      },
+      updated() {
+        this.setQueryParams();
       },
     });
   }
