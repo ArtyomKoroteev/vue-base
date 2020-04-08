@@ -6,10 +6,18 @@ const vueApp = () => {
       el: '#app',
       template: `<div class="vue-app-wrapper">
         <div class="filter-container">
+        <div class="search-container">
+          <input 
+            type="search" 
+            name="search-field" 
+            id="search"
+            v-model="filterData.query">
+            <button id="search" @click="searchPosts(filterData.query)">Search</button>
+        </div>
           <select name="author-filter" 
             id="filter" 
             v-model="filterData.userId"
-            @change="sortPosts(filterData.userId)">
+            @change="sortPosts(filterData.userId, null)">
               <option selected value="">All posts</option>
               <option v-for="author in authors">{{author}}</option>
           </select>
@@ -30,13 +38,21 @@ const vueApp = () => {
           status: 'published',
           sortedPosts: [],
           selectedValue: '',
+          searchResults: [],
           filterData: {
             userId: '',
+            query: '',
           },
         };
       },
       methods: {
+        setQueryParams() {
+          window.history.pushState(null, null, `${this.getQueryParams}`);
+        },
         sortPosts(category) {
+          if (category === null) {
+            return;
+          }
           this.sortedPosts = [];
           // eslint-disable-next-line array-callback-return
           this.posts.filter((value) => {
@@ -44,9 +60,33 @@ const vueApp = () => {
               this.sortedPosts.push(value);
             }
           });
+          this.setQueryParams();
         },
-        setQueryParams() {
-          window.history.pushState(null, null, `${this.getQueryParams}`);
+
+        searchPosts(queryParam) {
+          if (queryParam === null) {
+            return;
+          }
+          console.log(this.sortedPosts);
+          if (!this.sortedPosts.length) {
+            // eslint-disable-next-line array-callback-return
+            this.posts.filter((value) => {
+              if (value.title.includes(queryParam)) {
+                this.searchResults.push(value);
+              }
+            });
+            this.sortedPosts = this.searchResults;
+          } else {
+            // eslint-disable-next-line array-callback-return
+            this.sortedPosts.filter((value) => {
+              if (value.title.includes(queryParam)) {
+                this.searchResults.push(value);
+              }
+            });
+            this.sortedPosts = this.searchResults;
+          }
+
+          this.setQueryParams();
         },
       },
       computed: {
@@ -67,27 +107,27 @@ const vueApp = () => {
             : this.posts;
         },
         getQueryParams() {
-          const query = [];
+          const queryParameters = [];
           let options = '';
 
           // eslint-disable-next-line no-restricted-syntax
           for (const key in this.filterData) {
             if (Object.prototype.hasOwnProperty.call(this.filterData, key)) {
-              if (this.filterData[key].length !== 0) {
-                query.push(`${key}=${this.filterData[key]}`);
+              if (this.filterData[key] !== null) {
+                queryParameters.push(`${key}=${this.filterData[key]}`);
               }
-              options = `?${query.join('&')}`;
+              options = `?${queryParameters.join('&')}`;
             }
           }
           return options;
         },
       },
       created() {
-        this.filterData.userId = Number(window.location.search.split('=')[1]);
+        const params = new URLSearchParams(window.location.search);
+        this.filterData.userId = params.get('userId');
+        this.filterData.query = params.get('query');
         this.sortPosts(this.filterData.userId);
-      },
-      updated() {
-        this.setQueryParams();
+        this.searchPosts(this.filterData.query);
       },
     });
   }
