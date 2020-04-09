@@ -2,7 +2,8 @@
   "globals": {
     "jQuery": true,
     "$": true,
-    "Vue": true
+    "Vue": true,
+    "VeeValidate": true
   },
   "env": {
     "browser": true,
