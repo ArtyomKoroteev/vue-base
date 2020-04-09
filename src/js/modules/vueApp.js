@@ -4,15 +4,24 @@ const vueApp = () => {
   Vue.component('ValidationProvider', VeeValidate.ValidationProvider);
   Vue.component('ValidationObserver', VeeValidate.ValidationObserver);
 
+  VeeValidate.extend('search-input', {
+    validate: (value) => {
+      console.log(value)
+      const regex = new RegExp('^[A-Za-z0-9?!,."\'\\s]');
+      return regex.test(value);
+    },
+    message: 'Only letters, numbers and (! ? , . - ‘ “)',
+  });
+
   if (Vue) {
     new Vue({
       el: '#app',
       template: `<div class="vue-app-wrapper">
         <div class="filter-container">
-          <ValidationObserver>
+          <ValidationObserver v-slot="{ invalid }">
             <form @submit.prevent="onSubmit" class="filter-form">
               <div class="input-wrapper">
-              <validationProvider name="search" v-slot="{ errors }">
+              <validationProvider name="search" rules="search-input" v-slot="{ errors }">
                 <input 
                   type="search" 
                   name="search"
@@ -26,11 +35,10 @@ const vueApp = () => {
                 name="author-filter" 
                 id="filter" 
                 v-model="filterData.userId">
-                  <option selected value="0">All posts</option>
                   <option v-for="author in authors">{{author}}</option>
               </select>
               </div>
-              <button class="submit" type="submit">Submit</button>
+              <button class="submit" :disabled="invalid" type="submit">Submit</button>
             </form>
          </ValidationObserver>
         </div>
@@ -62,40 +70,30 @@ const vueApp = () => {
       },
       methods: {
         setQueryParams() {
-          window.history.pushState(null, null, `${this.getQueryParams}`);
+          window.history.pushState(null, null, `?${this.getQueryParams}`);
         },
         onSubmit() {
-          if (this.filterData.userId !== null && this.filterData.query === null) {
-            this.sortedPosts = [];
-            // eslint-disable-next-line array-callback-return
-            this.posts.filter((value) => {
+          this.sortedPosts = [];
+          // eslint-disable-next-line array-callback-return
+          this.posts.filter((value) => {
+            if (this.filterData.userId !== null && this.filterData.query === null) {
               if (value.userId === Number(this.filterData.userId)) {
                 this.sortedPosts.push(value);
               }
-            });
-          }
-          if (this.filterData.userId === null && this.filterData.query !== null) {
-            this.sortedPosts = [];
-            // eslint-disable-next-line array-callback-return
-            this.posts.filter((value) => {
+            } else if (this.filterData.userId === null && this.filterData.query !== null) {
               if (value.title.includes(this.filterData.query)) {
                 this.sortedPosts.push(value);
               }
-            });
-          }
-          if (this.filterData.userId !== null && this.filterData.query !== null) {
-            this.sortedPosts = [];
-            // eslint-disable-next-line array-callback-return
-            this.posts.filter((value) => {
+            } else if (this.filterData.userId !== null && this.filterData.query !== null) {
               if (value.userId === Number(this.filterData.userId)
                 && value.title.includes(this.filterData.query)) {
                 this.sortedPosts.push(value);
               }
-            });
-            if (!this.sortedPosts.length) {
-              this.sortedPosts = [0];
             }
-          }
+          });
+          // if (!this.sortedPosts.length) {
+          //   this.sortedPosts = [0];
+          // }
           this.setQueryParams();
         },
       },
