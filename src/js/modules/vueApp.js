@@ -1,29 +1,44 @@
 import data from './data';
 
 const vueApp = () => {
+  Vue.component('ValidationProvider', VeeValidate.ValidationProvider);
+  Vue.component('ValidationObserver', VeeValidate.ValidationObserver);
+
   if (Vue) {
     new Vue({
       el: '#app',
       template: `<div class="vue-app-wrapper">
         <div class="filter-container">
-        <div class="search-container">
-          <input 
-            type="search" 
-            name="search-field" 
-            id="search"
-            v-model="filterData.query">
-            <button id="search" @click="searchPosts(filterData.query)">Search</button>
-        </div>
-          <select name="author-filter" 
-            id="filter" 
-            v-model="filterData.userId"
-            @change="sortPosts(filterData.userId, null)">
-              <option selected value="">All posts</option>
-              <option v-for="author in authors">{{author}}</option>
-          </select>
+          <ValidationObserver>
+            <form @submit.prevent="onSubmit" class="filter-form">
+              <div class="input-wrapper">
+              <validationProvider name="search" v-slot="{ errors }">
+                <input 
+                  type="search" 
+                  name="search"
+                  id="search"
+                  v-model="filterData.query">
+                <span>{{ errors[0] }}</span>
+              </validationProvider>
+              </div>
+              <div class="input-wrapper">
+               <select 
+                name="author-filter" 
+                id="filter" 
+                v-model="filterData.userId">
+                  <option selected value="0">All posts</option>
+                  <option v-for="author in authors">{{author}}</option>
+              </select>
+              </div>
+              <button class="submit" type="submit">Submit</button>
+            </form>
+         </ValidationObserver>
         </div>
         <div class="posts-container">
-            <div class="card" v-for="post in filteredPosts" v-bind:key="post.id" v-if="post.status === status">
+            <div v-if="filteredPosts[0] === 0">
+              <h1>Nothing to find here</h1>
+            </div>
+            <div class="card" else v-for="post in filteredPosts" v-bind:key="post.id" v-if="post.status === status">
               <div class="img-wrap" >
                 <img v-if="post.imgUrl !== null" :src="post.imgUrl" alt="test">
                 <img v-else src="images/Image-Placeholder-600x600.png" alt="test">
@@ -49,43 +64,38 @@ const vueApp = () => {
         setQueryParams() {
           window.history.pushState(null, null, `${this.getQueryParams}`);
         },
-        sortPosts(category) {
-          if (category === null) {
-            return;
-          }
-          this.sortedPosts = [];
-          // eslint-disable-next-line array-callback-return
-          this.posts.filter((value) => {
-            if (value.userId === Number(category)) {
-              this.sortedPosts.push(value);
-            }
-          });
-          this.setQueryParams();
-        },
-
-        searchPosts(queryParam) {
-          if (queryParam === null) {
-            return;
-          }
-          console.log(this.sortedPosts);
-          if (!this.sortedPosts.length) {
+        onSubmit() {
+          if (this.filterData.userId !== null && this.filterData.query === null) {
+            this.sortedPosts = [];
             // eslint-disable-next-line array-callback-return
             this.posts.filter((value) => {
-              if (value.title.includes(queryParam)) {
-                this.searchResults.push(value);
+              if (value.userId === Number(this.filterData.userId)) {
+                this.sortedPosts.push(value);
               }
             });
-            this.sortedPosts = this.searchResults;
-          } else {
-            // eslint-disable-next-line array-callback-return
-            this.sortedPosts.filter((value) => {
-              if (value.title.includes(queryParam)) {
-                this.searchResults.push(value);
-              }
-            });
-            this.sortedPosts = this.searchResults;
           }
-
+          if (this.filterData.userId === null && this.filterData.query !== null) {
+            this.sortedPosts = [];
+            // eslint-disable-next-line array-callback-return
+            this.posts.filter((value) => {
+              if (value.title.includes(this.filterData.query)) {
+                this.sortedPosts.push(value);
+              }
+            });
+          }
+          if (this.filterData.userId !== null && this.filterData.query !== null) {
+            this.sortedPosts = [];
+            // eslint-disable-next-line array-callback-return
+            this.posts.filter((value) => {
+              if (value.userId === Number(this.filterData.userId)
+                && value.title.includes(this.filterData.query)) {
+                this.sortedPosts.push(value);
+              }
+            });
+            if (!this.sortedPosts.length) {
+              this.sortedPosts = [0];
+            }
+          }
           this.setQueryParams();
         },
       },
@@ -109,14 +119,13 @@ const vueApp = () => {
         getQueryParams() {
           const queryParameters = [];
           let options = '';
-
           // eslint-disable-next-line no-restricted-syntax
           for (const key in this.filterData) {
             if (Object.prototype.hasOwnProperty.call(this.filterData, key)) {
-              if (this.filterData[key] !== null) {
+              if (this.filterData[key] !== null && this.filterData[key] !== '') {
                 queryParameters.push(`${key}=${this.filterData[key]}`);
               }
-              options = `?${queryParameters.join('&')}`;
+              options = `${queryParameters.join('&')}`;
             }
           }
           return options;
@@ -126,8 +135,7 @@ const vueApp = () => {
         const params = new URLSearchParams(window.location.search);
         this.filterData.userId = params.get('userId');
         this.filterData.query = params.get('query');
-        this.sortPosts(this.filterData.userId);
-        this.searchPosts(this.filterData.query);
+        this.onSubmit();
       },
     });
   }
